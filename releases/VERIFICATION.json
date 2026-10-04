@@ -10,14 +10,20 @@
     "updates_and_legacy_migration_passed": 14,
     "exe_build": "passed",
     "native_ui_and_server_smoke": "passed",
-    "offline_exe_and_apk_buttons": "passed"
+    "offline_exe_and_apk_buttons": "passed",
+    "github_full_suite_passed": 60
   },
   "android": {
     "assembleDebug": "passed",
-    "tests_passed": 9,
-    "physical_device_acceptance": "pending"
+    "tests_passed": 8,
+    "physical_device_acceptance": "pending",
+    "interop_tests_skipped": 1
   },
-  "github_release_workflow": "configured; first remote run pending",
+  "github_release_workflow": {
+    "status": "success",
+    "run": "https://github.com/GerardoRodVal/File-Fast-Flow/actions/runs/37242674611",
+    "release": "https://github.com/GerardoRodVal/File-Fast-Flow/releases/tag/v0.3.2"
+  },
   "previous_verification": {
     "project": "DeviceDrop",
     "version": "0.1.0",
@@ -71,5 +77,12 @@
     ],
     "transport_encrypted": false,
     "full_v1_definition_of_done_closed": false
+  },
+  "published_version": "0.3.2",
+  "live_update_download": {
+    "version": "0.3.2",
+    "bytes": 91464978,
+    "sha256": "4c23c40029f302811772b2c74959087ba8f77ca9ba41bfada6276cf1b23f0b6e",
+    "integrity": "passed"
   }
 }

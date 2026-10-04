@@ -29,6 +29,7 @@ El workflow `.github/workflows/release.yml` prueba y compila Android y Windows,
 genera el instalador EXE, el APK de desarrollo y el ZIP portátil. Publica una
 GitHub Release solamente después de pasar todas las pruebas y cargar los paquetes.
 Cada ejecución recibe una versión creciente, inicialmente `0.3.1`, `0.3.2`, etc.
+Las compilaciones fallidas pueden dejar saltos en esa secuencia. La primera versión publicada es **0.3.2**.
 No es necesario editar manualmente la versión para cada cambio. El script suma el
 número de ejecución al componente patch de la versión base de `pyproject.toml`.
 También puedes ejecutar el workflow manualmente desde Actions.

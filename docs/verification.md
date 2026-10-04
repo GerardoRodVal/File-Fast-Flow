@@ -7,11 +7,13 @@ la Definition of Done completa como cerrada.
 ## FileFastFlow y actualizaciones desde GitHub · 4 de octubre
 
 - Suite completa Windows: **59 pruebas pasadas**. Después de los ajustes finales, 18 pruebas de interfaz y paquetes pasadas y 14 pruebas de actualizaciones y migración pasadas.
-- Android: `assembleDebug` y 9 pruebas unitarias pasadas. Se conserva la aceptación pendiente en teléfono físico.
+- Android: `assembleDebug` y 8 pruebas unitarias pasadas; 1 prueba de interoperabilidad omitida porque no se inició su fixture externo. Se conserva la aceptación pendiente en teléfono físico.
 - Ejecutable FileFastFlow reconstruido. Interfaz nativa de Windows y servidor LAN comprobados con `--smoke-test`.
 - `--package-smoke-test` ejecutó ambos botones: instalador EXE de 112,031,758 bytes y APK de 21,155,750 bytes; ambos éxitos y salida 0.
 - Búsqueda de Releases, comparación numérica, descarga HTTPS con redirección, integridad SHA-256, cancelación, conservación del destino, aviso por versión y reutilización de datos DeviceDrop comprobados.
-- La primera ejecución remota del workflow se comprobará después de subir `main`.
+- GitHub Actions completó la compilación y publicación de **0.3.2**: **60 pruebas Windows pasadas**, APK Android, instalador EXE, ZIP portátil y verificación del ejecutable empaquetado. [Ejecución verificada](https://github.com/GerardoRodVal/File-Fast-Flow/actions/runs/37242674611).
+- El actualizador consultó la Release real, detectó 0.3.2 desde 0.3.0, descargó el instalador de 91,464,978 bytes y verificó su SHA-256 contra GitHub.
+- [Versión publicada](https://github.com/GerardoRodVal/File-Fast-Flow/releases/tag/v0.3.2). La primera ejecución falló por un paquete Android retirado; el workflow corregido utiliza paquetes de SDK explícitos.
 
 ## Verificaciones anteriores
 

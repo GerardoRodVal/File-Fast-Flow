@@ -1,0 +1,75 @@
+{
+  "project": "FileFastFlow",
+  "version": "0.3.0",
+  "date": "2026-10-04",
+  "branch": "main",
+  "repository": "https://github.com/GerardoRodVal/File-Fast-Flow",
+  "windows": {
+    "full_suite_passed": 59,
+    "final_ui_packages_passed": 18,
+    "updates_and_legacy_migration_passed": 14,
+    "exe_build": "passed",
+    "native_ui_and_server_smoke": "passed",
+    "offline_exe_and_apk_buttons": "passed"
+  },
+  "android": {
+    "assembleDebug": "passed",
+    "tests_passed": 9,
+    "physical_device_acceptance": "pending"
+  },
+  "github_release_workflow": "configured; first remote run pending",
+  "previous_verification": {
+    "project": "DeviceDrop",
+    "version": "0.1.0",
+    "date": "2026-10-04",
+    "branch": "feature/devicedrop-v1",
+    "windows": {
+      "platform": "Windows 11 x64",
+      "python": "3.12.14",
+      "pyside6": "6.8.3",
+      "tests_passed": 38,
+      "exe_build": "passed",
+      "exe_ui_and_server_smoke": "passed",
+      "exe_exit_code": 0,
+      "mdns_two_local_peers": "passed",
+      "folder_auto_sync_tcp": "passed",
+      "offline_package_buttons_frozen_exe": "passed",
+      "offline_package_buttons_installed_exe": "passed",
+      "installer_install_uninstall": "passed",
+      "installer_compiler": "Inno Setup 6.7.3",
+      "inno_authenticode_publisher": "Pyrsys B.V.",
+      "desktop_shortcut_updated": true,
+      "current_exe": "windows/dist/DeviceDrop-Installers/DeviceDrop.exe"
+    },
+    "android": {
+      "compile_sdk": 35,
+      "target_sdk": 35,
+      "min_sdk": 26,
+      "assembleDebug": "passed",
+      "regular_tests_passed": 8,
+      "regular_suite_conditional_interop_skipped": 1
+    },
+    "interoperability_separate_run": {
+      "status": "passed",
+      "android_runtime": "Robolectric API 34",
+      "transport": "real TCP loopback",
+      "files": [
+        "small.txt",
+        "photo.jpg",
+        "100MB.bin"
+      ],
+      "binary_bytes": 104857600,
+      "directions": 2,
+      "transfers": 6,
+      "all_sha256_match": true
+    },
+    "pending": [
+      "Android physical device acceptance: NSD, QR camera, external Share Sheet, notifications and foreground battery policies",
+      "Windows 10 execution acceptance",
+      "Multi-GB file stress test",
+      "TLS, resume, folder ZIP and Windows Explorer context menu"
+    ],
+    "transport_encrypted": false,
+    "full_v1_definition_of_done_closed": false
+  }
+}

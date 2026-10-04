@@ -1,0 +1,139 @@
+name: Build and publish FileFastFlow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: filefastflow-release
+  cancel-in-progress: false
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Set release version
+        id: version
+        run: echo "version=$(python windows/scripts/release_version.py '${{ github.run_number }}')" >> "$GITHUB_OUTPUT"
+      - name: Build and test Android
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug testDebugUnitTest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  windows:
+    needs: android
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: windows/requirements.lock.txt
+      - name: Set release version
+        run: python windows/scripts/release_version.py '${{ github.run_number }}'
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: work/apk
+      - name: Install Python dependencies
+        run: python -m pip install -r windows/requirements.lock.txt
+      - name: Test Windows
+        working-directory: windows
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+      - name: Prepare portable Inno Setup
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force work | Out-Null
+          $installer = Join-Path $PWD 'work/innosetup.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe' -OutFile $installer
+          $signature = Get-AuthenticodeSignature $installer
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Pyrsys') {
+            throw 'Inno Setup signature verification failed'
+          }
+          $compilerDir = Join-Path $PWD 'work/inno'
+          $process = Start-Process -FilePath $installer -ArgumentList @('/PORTABLE=1', '/CURRENTUSER', '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOICONS', "/DIR=`"$compilerDir`"") -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Inno extraction failed: $($process.ExitCode)" }
+      - name: Build Windows bundle and installers
+        shell: pwsh
+        run: |
+          python windows/scripts/build_windows.py --apk work/apk/app-debug.apk --inno-dir work/inno
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Force releases | Out-Null
+          $env:PYTHONPATH = Join-Path $PWD 'windows'
+          python -c "from devicedrop.packages import create_package, default_filename; from pathlib import Path; [create_package(kind, Path('releases') / default_filename(kind)) for kind in ('windows', 'android')]"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python windows/scripts/package_release.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify packaged UI and local server
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $exe = Join-Path $PWD 'windows/dist/FileFastFlow/FileFastFlow.exe'
+          $data = Join-Path $PWD 'work/smoke'
+          $process = Start-Process -FilePath $exe -ArgumentList @('--smoke-test', '--data-dir', "`"$data`"", '--port', '45990') -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Packaged UI smoke test failed' }
+          $result = Get-Content (Join-Path $data 'smoke_result.json') | ConvertFrom-Json
+          if (-not $result.ui_started -or -not $result.server_started) { throw 'Packaged server smoke test failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: |
+            releases/FileFastFlow-*-Setup.exe
+            releases/FileFastFlow-*-debug.apk
+            releases/FileFastFlow-Windows-x64.zip
+            releases/SHA256.json
+          if-no-files-found: error
+
+  publish:
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: releases
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.android.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          tag="v$RELEASE_VERSION"
+          printf 'Actualización de FileFastFlow desde main.\n\nCommit: %s\n\nDescarga el instalador Setup.exe para Windows. El APK Android es una compilación de desarrollo.\n' "$RELEASE_COMMIT" > notes.md
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --draft --target "$RELEASE_COMMIT" --title "FileFastFlow $RELEASE_VERSION" --notes-file notes.md
+          fi
+          gh release upload "$tag" releases/* --clobber
+          gh release edit "$tag" --draft=false --latest

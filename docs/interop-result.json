@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "files": [
+    "100MB.bin",
+    "photo.jpg",
+    "small.txt"
+  ],
+  "directions": 2,
+  "transfers": 6,
+  "sha256": "all_match",
+  "environment": "Windows Python and Android Kotlin under Robolectric, real TCP loopback"
+}

@@ -1,4 +1,84 @@
-# Verificación de entrega · actualizada el 4 de octubre de 2026
+# Verificación de entrega · actualizada el 14 de octubre de 2026
+
+## Distribución de cambios locales · 14 de octubre de 2026
+
+- Suite completa Windows: **145 pruebas pasadas, 2 omitidas** del escritorio
+  nativo del widget. Verificadas la cola sin conexión, la reconexión, el rechazo
+  de paquetes alterados, la recepción real por TCP, el protocolo opcional de
+  actualización, la espera por cambios estables y la reutilización de paquetes.
+  El cierre durante una distribución detiene los envíos y conserva la cola.
+- Compilación real desde copia aislada: Android **14 pruebas pasadas, 1 omitida**
+  de interoperabilidad que necesita su fixture externo; APK generado con
+  versionCode **100101**. Se conserva la clave debug y el identificador.
+- Windows compilado con PyInstaller y ambos instaladores generados por el mismo
+  mecanismo que utiliza la nueva opción. Revisión local comprobada al ejecutar
+  el EXE: `4530a597359ffabea422449b44332321c42a6e04580aee4a4eb1122af3f29daa`.
+- Arranque del EXE con datos aislados: `ui_started=true`, `server_started=true`,
+  salida 0. El servidor anuncia la revisión que realmente ejecuta para poder
+  distinguir entrega e instalación en el distribuidor.
+- Vista de la nueva sección revisada en tamaño compacto. Los paquetes quedan
+  preparados para el botón; no se envían ni instalan en dispositivos del usuario
+  durante esta verificación. La instalación en un teléfono físico sigue pendiente.
+- Acceso directo actualizado y aplicación real reiniciada con autorización previa,
+  sin transferencias activas. Ventana visible y una única instancia tras una
+  segunda ejecución. Compilación verificada guardada en caché; distribución aún
+  sin iniciar hasta pulsar el botón o activar la opción automática.
+
+## Copiar desde notificaciones de Windows · 14 de octubre de 2026
+
+- Suite completa Windows: **137 pruebas pasadas, 2 omitidas** por requerir el
+  escritorio nativo del widget. Pruebas dirigidas de copia, interfaz e instancia:
+  **62 pasadas**.
+- Comprobación nativa adicional: notificación silenciosa publicada en el centro
+  de notificaciones, con botones Copiar y Abrir FileFastFlow y URI de protocolo
+  para cada transferencia. La notificación de prueba se retiró al terminar.
+- Portapapeles nativo: comprobado CF_HDROP para pegar archivos en el Explorador
+  y los píxeles de una imagen. Se restauró el portapapeles previo tras la prueba.
+- La prueba entre procesos confirmó que Copiar reutiliza la instancia oculta,
+  deja la ventana oculta y no vuelve a abrir SQLite ni altera un envío activo.
+  Las URI aceptan solo acciones conocidas y UUID; el receptor resuelve solo
+  transferencias entrantes completadas de su historial local.
+- Accesos adicionales: Copiar en transferencias recientes, Copiar último archivo
+  recibido en la bandeja y Ctrl+Shift+C cuando la aplicación tiene el foco.
+- Acceso directo actualizado e instancia real reiniciada con autorización previa
+  y cero transferencias activas. Ventana visible, servicio LAN activo y una sola
+  instancia tras una segunda ejecución.
+
+## Carpeta recepción única · 14 de octubre de 2026
+
+- Suite completa Windows: **129 pruebas pasadas, 2 omitidas**. La revisión
+  dirigida de recepción, interfaz y migración pasó sus 85 pruebas. Las dos
+  omitidas requieren el escritorio nativo para comprobar el anclaje del widget;
+  la suite se ejecutó con Qt en modo offscreen.
+- Configuración muestra un solo campo «Carpeta recepción». General utiliza la
+  raíz y cada dispositivo tiene una carpeta individual dentro de ella.
+- Transferencias TCP con dos destinatarios: ambos reciben los archivos de la
+  raíz; únicamente el dueño recibe sus archivos individuales. El catálogo y la
+  descarga autenticados tampoco permiten acceder a archivos de otros vínculos.
+- Verificados los envíos pendientes al reconectar, la ausencia de duplicados y
+  de reenvíos automáticos de archivos recibidos. Migración con colisiones sin
+  sobrescribir archivos existentes ni mover archivos ajenos al historial.
+- Revisión visual de Configuración en tamaños 1280×900 y 820×650.
+- Instancia real reiniciada con autorización previa y cero transferencias
+  activas. Recepción verificada en `C:\Users\gerar\filefastflow`; se conservan
+  `Asus_TUF` y `Xiaomi 13T Pro`. Acceso directo actualizado; ventana nativa visible
+  y un solo proceso tras ejecutar nuevamente el lanzador.
+
+## Actualizaciones en Android · 14 de octubre de 2026
+
+- Windows: **73 pruebas pasadas** en la suite completa, incluidas actualizaciones, migración y numeración de versiones. Después del ajuste de exportación desde una carpeta separada, **22 pruebas de paquetes y actualizaciones pasadas**.
+- Android: **13 pruebas pasadas**, incluida la nueva suite del actualizador; InteropTest se omite al no proporcionar un fixture de integración.
+- Android compila el APK **0.4.0**, `versionCode=100100`, con WorkManager para comprobaciones periódicas y permiso para abrir el instalador.
+- El certificado SHA-256 del APK coincide con el de la entrega anterior 0.3.0: `1322e0281f22b25842ce93f9f568ad54b27775ded78476048feee4352a51ac9d`.
+- Se comprueban rechazo de versiones antiguas, borradores, metadatos inválidos y URLs ajenas; descargas corruptas o canceladas; un único trabajo periódico; desactivación; y avisos sin repetición por versión.
+- El ejecutable Windows 0.4.0 empaquetado inicia su interfaz y servidor correctamente con datos aislados.
+- El acceso directo del escritorio sigue usando el entorno virtual, el lanzador del proyecto, el directorio `windows` y el icono requerido. No se cerró una instancia del usuario.
+
+La entrega 0.4.0 es local hasta subir los cambios a `main`; GitHub Actions publica
+las siguientes versiones solamente después de probar y compilar ambas plataformas.
+La primera activación de avisos en un teléfono requiere instalar este APK y abrirlo
+una vez. La entrega, los permisos de instalación y los tiempos de ejecución en
+segundo plano aún requieren comprobación en el teléfono físico.
 
 La V1 está implementada, pero su aceptación completa requiere pruebas sobre un
 teléfono Android físico. No había teléfono ni emulador conectado; no se marca
@@ -113,7 +193,7 @@ HTTP sin TLS; credenciales locales sin cifrado de base de datos; APK debug y
 EXE sin firma comercial. Windows 10 tiene código compatible, pero la ejecución
 se probó en Windows 11. No se probaron varios GB ni recepción prolongada en
 segundo plano con políticas específicas de fabricantes. Android usa puerto
-45832 fijo y tema claro. El auto-sync no recupera archivos que aparecieron con
-el destino offline. Los logs SLF4J de Ktor no tienen binding compatible en V1;
+45832 fijo y tema claro. Windows recupera los archivos locales pendientes cuando
+el destino vuelve a estar online. Los logs SLF4J de Ktor no tienen binding compatible en V1;
 los errores de emisor se registran en Logcat y se muestran como códigos breves.
 No hay TLS, resume, ZIP de carpetas ni menú contextual.

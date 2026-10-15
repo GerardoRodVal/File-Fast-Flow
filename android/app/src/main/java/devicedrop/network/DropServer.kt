@@ -31,7 +31,8 @@ class DropServer(private val repo: DropRepository) {
             get("/api/v1/connection") { safe(call) {
                 val peer = call.peer()
                 call.request.headers["X-DeviceDrop-Port"]?.let { repo.observeConnection(peer, call.request.local.remoteHost, it.toInt()) }
-                call.reply(JSONObject().put("status", "online").put("device_id", repo.deviceId).put("protocol_version", 1).put("receiving", repo.receiving.value))
+                call.reply(JSONObject().put("status", "online").put("device_id", repo.deviceId).put("protocol_version", 1).put("receiving", repo.receiving.value)
+                    .put("local_revision", devicedrop.BuildConfig.LOCAL_REVISION).put("version_code", devicedrop.BuildConfig.VERSION_CODE))
             } }
             post("/api/v1/connection/check") { safe(call) {
                 val peer = call.peer(); val data = call.smallJson()

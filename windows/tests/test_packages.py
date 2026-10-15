@@ -19,6 +19,19 @@ def apk_assets(tmp_path, data=b"APK test bytes"):
     return assets
 
 
+def test_source_generator_uses_finished_versioned_bundle_without_touching_running_bundle(tmp_path, monkeypatch):
+    monkeypatch.setattr(packages, "__file__", str(tmp_path / "devicedrop/packages.py"))
+    monkeypatch.setattr(packages.sys, "frozen", False, raising=False)
+    default = tmp_path / "dist/FileFastFlow"
+    newer = tmp_path / "dist" / f"updates-{packages.VERSION}" / "FileFastFlow"
+    assert packages.windows_bundle() == default
+    newer.mkdir(parents=True)
+    (newer / "FileFastFlow.exe").write_bytes(b"new bundle")
+    assert packages.windows_bundle() == default
+    (newer / "_internal").mkdir()
+    assert packages.windows_bundle() == newer
+
+
 def test_apk_export_and_hash_checked_before_replace(tmp_path):
     assets = apk_assets(tmp_path)
     output = tmp_path / "Android package.apk"
@@ -78,7 +91,7 @@ def test_buttons_worker_export_cancel_and_error_recovery(runtime, tmp_path, monk
     errors = []
     monkeypatch.setattr(QMessageBox, "warning", lambda *args: errors.append(args[-1]))
     try:
-        assert window.nav.item(5).text() == "Instaladores"
+        assert window.nav.item(window.SOFTWARE_PAGE).text().replace("\n", " ") == "Instaladores y actualizaciones"
         window.android_package_button.click()
         assert window.package_worker is None
         window.android_package_button.click()

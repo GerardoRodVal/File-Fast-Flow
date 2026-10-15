@@ -32,7 +32,7 @@ with zipfile.ZipFile(source_zip, "w", compression=zipfile.ZIP_DEFLATED, compress
     import os
     for directory, directories, names in os.walk(root):
         current = Path(directory)
-        directories[:] = [name for name in directories if name not in excluded and
+        directories[:] = [name for name in directories if name not in excluded and not name.startswith(".test-tmp") and
             not (current == root / "windows" / "devicedrop" / "assets" and name in {"android", "inno"})]
         for name in sorted(names):
             path = current / name

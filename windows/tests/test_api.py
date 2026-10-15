@@ -38,13 +38,14 @@ async def test_upload_hash_collision_and_idempotence(client, runtime, peer):
         assert response.status_code == 200, response.text
         assert response.json()["filename"] == ("hello.txt" if n == 0 else "hello (1).txt")
         assert (await offer(client, peer, meta)).json()["status"] == "completed"
-    assert len(list(Path(runtime.db.setting("receive_folder")).glob("*.txt"))) == 2
+    assert len(runtime.spaces.files(peer["device_id"])) == 2
+    assert runtime.spaces.files() == []
 
 async def test_corruption_cleanup(client, runtime, peer):
     meta = metadata(peer); await offer(client, peer, meta)
     response = await upload(client, peer, meta, b"WRONG")
     assert response.json()["error"] == "TRANSFER_CORRUPTED"
-    assert list(Path(runtime.db.setting("receive_folder")).iterdir()) == []
+    assert not [p for p in runtime.spaces.root.rglob("*") if p.is_file()]
     assert runtime.db.history()[0]["status"] == "failed"
 
 async def test_upload_without_offer(client, runtime, peer):
@@ -76,6 +77,33 @@ async def test_transfer_metadata_scoped_to_peer(client, runtime, peer):
     headers = {"Authorization": "Bearer " + peer["token"]}
     rows = (await client.get("/api/v1/transfers", headers=headers)).json()["transfers"]
     assert rows and "saved_path" not in rows[0]
+
+async def test_general_upload_is_at_root_and_scope_cannot_change(client, runtime, peer):
+    meta = metadata(peer).model_copy(update={"share_scope": "general"})
+    await offer(client, peer, meta)
+    assert (await upload(client, peer, meta, b"hello")).status_code == 200
+    assert (runtime.spaces.folder() / "hello.txt").read_bytes() == b"hello"
+    assert runtime.spaces.files(peer["device_id"]) == []
+    changed = meta.model_copy(update={"share_scope": "device"})
+    assert (await offer(client, peer, changed)).status_code == 409
+
+async def test_shared_catalog_and_download_isolate_device_folders(client, runtime, peer):
+    other_id = str(uuid4())
+    runtime.db.trust({"device_id": other_id, "device_name": "Other", "platform": "android", "ip": "127.0.0.1", "port": 45834}, "o" * 43)
+    (runtime.spaces.folder() / "public.txt").write_text("everyone")
+    (runtime.spaces.folder(peer["device_id"]) / "private.txt").write_text("peer only")
+    (runtime.spaces.folder(other_id) / "secret.txt").write_text("other only")
+    (runtime.spaces.folder() / ".unfinished.space-part").write_text("partial")
+    for token, names in [(peer["token"], {"public.txt", "private.txt"}), ("o" * 43, {"public.txt", "secret.txt"})]:
+        headers = {"Authorization": "Bearer " + token}
+        response = await client.get("/api/v1/shared", headers=headers)
+        assert {f["filename"] for f in response.json()["files"]} == names
+        assert (await client.get("/api/v1/shared/general/public.txt", headers=headers)).text == "everyone"
+    headers = {"Authorization": "Bearer " + peer["token"]}
+    assert (await client.get("/api/v1/shared/device/private.txt", headers=headers)).text == "peer only"
+    for url in ["/api/v1/shared/device/secret.txt", "/api/v1/shared/general/secret.txt", "/api/v1/shared/general/.unfinished.space-part", f"/api/v1/shared/{other_id}/secret.txt"]:
+        assert (await client.get(url, headers=headers)).status_code == 404
+    assert (await client.get("/api/v1/shared")).status_code == 401
 
 async def test_actual_tcp_bidirectional_transfer_and_shutdown(tmp_path):
     from devicedrop.runtime import Runtime

@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS transfers (
 CREATE TABLE IF NOT EXISTS processed_files (
  origin_device_id TEXT, content_hash TEXT, path TEXT, transfer_id TEXT,
  PRIMARY KEY(origin_device_id, content_hash, path));
+CREATE TABLE IF NOT EXISTS space_files (path TEXT PRIMARY KEY, size INTEGER, mtime_ns INTEGER);
+CREATE TABLE IF NOT EXISTS space_deliveries (
+ path TEXT, device_id TEXT, size INTEGER, mtime_ns INTEGER, status TEXT,
+ PRIMARY KEY(path, device_id));
 """
 
 
@@ -32,6 +36,9 @@ class Database:
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;" + SCHEMA)
+        columns = {row[1] for row in self.conn.execute("PRAGMA table_info(transfers)")}
+        if "share_scope" not in columns:
+            self.conn.execute("ALTER TABLE transfers ADD COLUMN share_scope TEXT DEFAULT 'device'")
         self.conn.execute("UPDATE transfers SET status='failed', error='INTERRUPTED' WHERE status NOT IN ('completed','failed','cancelled')")
         self.conn.commit()
 
@@ -77,10 +84,10 @@ class Database:
 
     def transfer(self, meta: dict, direction: str, destination: str = "", original_path: str = ""):
         self.execute("""INSERT INTO transfers (transfer_id,direction,filename,size,sha256,mime_type,
-        source_device,destination_device,origin_device_id,batch_id,status,started_at,original_path)
-        VALUES (?,?,?,?,?,?,?,?,?,?, 'queued',?,?) ON CONFLICT(transfer_id) DO NOTHING""",
+        source_device,destination_device,origin_device_id,batch_id,status,started_at,original_path,share_scope)
+        VALUES (?,?,?,?,?,?,?,?,?,?, 'queued',?,?,?) ON CONFLICT(transfer_id) DO NOTHING""",
         (str(meta["transfer_id"]), direction, meta["filename"], meta["size"], meta["sha256"], meta["mime_type"],
-         str(meta["sender_device_id"]), destination, str(meta["origin_device_id"]), str(meta.get("batch_id") or ""), time.time(), original_path))
+         str(meta["sender_device_id"]), destination, str(meta["origin_device_id"]), str(meta.get("batch_id") or ""), time.time(), original_path, meta.get("share_scope", "device")))
 
     def update_transfer(self, transfer_id: str, **values):
         allowed = {"status", "bytes_done", "speed", "saved_path", "completed_at", "error"}

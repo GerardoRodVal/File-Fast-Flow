@@ -2,10 +2,19 @@
 *.py text eol=lf
 *.kt text eol=lf
 *.kts text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
 *.md text eol=lf
-gradlew text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.xml text eol=lf
+.gitattributes text eol=lf
+*.ps1 text eol=crlf
 *.bat text eol=crlf
-*.jar binary
-*.png binary
+gradlew text eol=lf
+*.apk binary
+*.exe binary
 *.ico binary
+*.png binary
+*.jar binary
 *.keystore binary

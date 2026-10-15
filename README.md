@@ -1,4 +1,4 @@
-# FileFastFlow · LAN v0.3.0
+# FileFastFlow · LAN v0.4.0
 
 Aplicaciones nativas para compartir archivos entre Windows y Android en la misma
 red. Sin cuentas, nube ni servidor externo. Ambas aplicaciones pueden enviar y
@@ -9,11 +9,21 @@ Android. La aceptación final en un teléfono físico sigue pendiente; no se dec
 cerrada la Definition of Done completa sin esa prueba. El tráfico usa **HTTP sin
 cifrado TLS**, protegido por una credencial distinta para cada vínculo.
 
-## Actualizaciones entre PCs
+## Actualizaciones en Windows y Android
 
-Instala FileFastFlow en ambas PCs. En **Actualizaciones** puedes buscar, descargar e instalar nuevas versiones. **Configuración → Buscar actualizaciones y avisar automáticamente** está activado por defecto: la aplicación consulta GitHub al iniciar y cada 30 minutos mientras esté abierta o en la bandeja.
+Instala FileFastFlow en ambas PCs. En **Instaladores y actualizaciones** puedes buscar, descargar e instalar nuevas versiones. **Configuración → Buscar actualizaciones y avisar automáticamente** está activado por defecto: la aplicación consulta GitHub al iniciar y cada 30 minutos mientras esté abierta o en la bandeja.
 
-Cada `git push origin main` ejecuta las pruebas, compila los paquetes y publica una nueva [versión descargable](https://github.com/GerardoRodVal/File-Fast-Flow/releases/latest). Los cambios locales llegan a las otras PCs después de publicarse. Necesitas Internet para recibir el aviso y descargar. Consulta [el flujo de actualización y compatibilidad](docs/updates.md).
+En Android, **Ajustes → Actualizaciones** permite buscar, descargar el APK verificado
+y abrir el instalador. La búsqueda automática está activada inicialmente: comprueba
+al abrir la aplicación y aproximadamente cada 30 minutos en segundo plano mediante
+WorkManager, aunque la conexión LAN esté detenida. Permite las notificaciones del
+teléfono. Android puede retrasar la tarea por ahorro de batería.
+
+Cada `git push origin main` ejecuta las pruebas, compila los paquetes y publica una nueva [versión descargable](https://github.com/GerardoRodVal/File-Fast-Flow/releases/latest). Los cambios locales llegan a las PCs y teléfonos después de publicarse. Necesitas Internet para recibir el aviso y descargar. Consulta [el flujo de actualización y compatibilidad](docs/updates.md) y [el historial de cambios](CHANGELOG.md).
+
+Instala una vez el APK **0.4.0 o posterior** para activar los avisos en Android.
+Los APK anteriores no contienen el actualizador y necesitan esta primera instalación
+manual. Las siguientes actualizaciones se instalan encima, con confirmación de Android.
 
 ## Ejecutar Windows desde el código
 
@@ -36,12 +46,56 @@ Alternativa sin activar el entorno:
 PySide6 se fija en 6.8.3 para mantener una versión estable de Qt al empaquetar.
 Las versiones exactas probadas están en `windows/requirements.lock.txt`.
 
-La primera ejecución pide nombre y carpeta de recibidos. Por defecto:
+El acceso directo de desarrollo del escritorio abre el código actual con
+`windows/scripts/launch_desktop.pyw` y las dependencias del entorno `.venv`, sin
+consola. Usa directamente el intérprete base del entorno para mantener un solo
+proceso, evitando el redirector de Windows.
+Para crearlo o restaurarlo desde la raíz del proyecto:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File windows/scripts/update_desktop_shortcut.ps1
+```
+
+Después de modificar el código, sal de FileFastFlow desde la bandeja y vuelve a
+abrir el acceso directo para cargar los cambios.
+
+Si una entrega empaquetada está abierta, puedes preparar otra sin sobrescribirla:
+`python scripts/build_windows.py --dist-dir dist/updates-0.4.0` desde `windows/`.
+El generador de EXE desde el código utiliza esa carpeta cuando contiene la versión
+actual completa; las instalaciones empaquetadas utilizan su propia carpeta.
+
+FileFastFlow mantiene una sola instancia por carpeta de datos. Volver a abrir
+el acceso directo restaura la ventana existente. Cerrar la ventana la deja
+funcionando en segundo plano; para terminarla, usa **Salir** desde la bandeja.
+Un clic o doble clic en el icono de la bandeja vuelve a abrir la ventana
+principal. Si no hay una instancia en ejecución, el acceso directo inicia una
+nueva y muestra su ventana.
+
+El **widget de escritorio** muestra los dispositivos vinculados, una bolita de
+estado y accesos rápidos para validar la conexión o seleccionar archivos para
+enviar a cada equipo. El icono de carpeta abre el espacio local de archivos
+compartidos de ese dispositivo, incluso si está desconectado.
+Verde significa conectado; rojo, sin conexión; ámbar,
+validando, conexión parcial o recepción remota pausada; gris, sin comprobar.
+Se activa por defecto y está anclado al escritorio de Windows, debajo de las
+demás aplicaciones; permanece allí al mostrar el escritorio o al ocultar la
+ventana principal en la bandeja. No aparece como ventana independiente en Alt+Tab.
+En el menú **Widget → Activar widget de escritorio** puedes activarlo o
+desactivarlo al instante; también desde el menú de la bandeja. Arrastra su
+encabezado para moverlo: la posición y la preferencia se conservan al reiniciar.
+En **Widget → Tema del widget** elige una tarjeta de la cuadrícula con una vista previa real.
+Puedes seleccionar **Clásico**, que sigue los colores de la app,
+o **Minimalista · estilo Disks**, un panel oscuro translúcido con una fila compacta
+por dispositivo. El cambio se aplica al instante y se guarda. En Minimalista,
+pasa el cursor sobre la bolita para ver el estado y haz doble clic en el
+encabezado para abrir la ventana principal.
+
+La primera ejecución pide nombre y una única **Carpeta recepción**. Por defecto:
 
 | Uso | Ubicación |
 |---|---|
-| Recibidos | `%USERPROFILE%\Downloads\FileFastFlow` |
-| Carpeta compartida | `%USERPROFILE%\FileFastFlow` |
+| Carpeta recepción / General | `%USERPROFILE%\filefastflow` |
+| Por dispositivo | `%USERPROFILE%\filefastflow\<Nombre del dispositivo>` |
 | Base de datos | `%LOCALAPPDATA%\FileFastFlow\devicedrop.db` |
 | Logs con rotación | `%LOCALAPPDATA%\FileFastFlow\logs\devicedrop.log` |
 
@@ -71,7 +125,7 @@ La primera compilación descarga herramientas y dependencias; el funcionamiento
 de la aplicación no requiere Internet.
 
 APK generado: `android/app/build/outputs/apk/debug/app-debug.apk`.
-Una copia de entrega se guarda en `releases/FileFastFlow-0.3.0-debug.apk`.
+Una copia de entrega se guarda en `releases/FileFastFlow-0.4.0-debug.apk`.
 Es un APK de desarrollo firmado con la clave debug, no una publicación en Play.
 
 Con un teléfono conectado y depuración USB autorizada:
@@ -87,13 +141,39 @@ una notificación de servicio activo. Desde Ajustes puedes detenerla.
 
 1. Conecta ambos dispositivos a la misma LAN y abre FileFastFlow en ambos.
 2. En Windows entra en Dispositivos → Mostrar código / QR.
+   Esta pestaña muestra el equipo principal en el centro y los demás como
+   burbujas con nombre, plataforma, IP y estado. Verde indica conexión, rojo
+   desconexión, ámbar atención o validación y gris un estado sin comprobar o
+   sin vincular. Usa **Validar** en cada burbuja y **Opciones** para corregir la
+   dirección, cambiar la aceptación de archivos o desvincular. Los equipos cercanos sin vínculo
+   permiten iniciar la vinculación desde su burbuja.
 3. En Android escanea el QR, o elige la PC descubierta e introduce el código.
    También puedes indicar manualmente la IP y el puerto mostrados por Windows.
 4. El código/QR caduca en 120 segundos y sirve una sola vez. El vínculo persiste.
-5. En Windows selecciona o arrastra archivos y elige uno o varios destinos.
+5. En Windows, Inicio muestra **General** y un espacio por dispositivo vinculado.
+   Arrastra o selecciona archivos en General para enviarlos a todos, o en un
+   espacio individual para enviarlos solo a ese dispositivo. Se guarda una copia
+   local en cada espacio; puedes abrirla con doble clic o usar **Abrir carpeta**.
+   **Enviar guardados** permite reenviarlos cuando un dispositivo vuelve a estar
+   conectado o después de vincular uno nuevo. El progreso y los errores de envío
+   aparecen en Transferencias recientes de Inicio. General guarda los archivos
+   directamente en `%USERPROFILE%\filefastflow` (en esta PC, `C:\Users\gerar\filefastflow`).
+   Cada dispositivo tiene una subcarpeta con su nombre. Las copias de los espacios
+   anteriores se migran conservando los archivos y resolviendo nombres repetidos
+   sin sobrescribir. La recepción usa esa misma raíz: archivos generales al nivel
+   de las subcarpetas, archivos individuales dentro de la carpeta del remitente.
+   Cada vínculo accede a los archivos generales y a sus archivos individuales;
+   nunca al interior de las carpetas de otros dispositivos.
    En Android usa Enviar archivo o Compartir → FileFastFlow desde otra aplicación.
-6. El historial muestra estado, tamaño y progreso. Los archivos de imagen tienen
+6. Transferencias recientes en Inicio muestra estado, tamaño y progreso. Los archivos de imagen tienen
    miniatura, resolución y vista ampliada.
+   En Windows, la notificación de un archivo recibido incluye **Copiar** para
+   pegarlo directamente con Ctrl+V. Las imágenes se ofrecen también como imagen
+   en el portapapeles. Puedes usar **Copiar** en Transferencias recientes,
+   **Copiar último archivo recibido** en la bandeja o **Ctrl+Shift+C** cuando
+   FileFastFlow está en primer plano. La acción de la notificación reutiliza la
+   instancia abierta sin mostrar la ventana; si saliste de la app, la inicia en
+   segundo plano para copiar el archivo correspondiente.
 
 Android puede mostrar su propio código/QR para que Windows inicie la vinculación.
 Windows permite introducir el código por IP o pegar el JSON del QR.
@@ -106,25 +186,40 @@ documentos del sistema, sin permisos de almacenamiento obsoletos.
 
 ## Sincronizar una carpeta
 
-Activa Auto Sync en el dispositivo confiable dentro de Windows. Un archivo nuevo
-en la carpeta compartida se envía cuando el destino está online y se han observado
-3 segundos de tamaño y fecha estables. En Windows se comprueba también que no
-haya un escritor manteniendo el archivo abierto.
+Coloca archivos directamente en Carpeta recepción para compartirlos con todos
+los dispositivos vinculados, o dentro de una subcarpeta de dispositivo para
+compartirlos solo con ese equipo. El envío comienza cuando el destino está online
+y el archivo está estable. En Windows se comprueba también que no haya un
+escritor manteniendo el archivo abierto.
 
-V1 sincroniza únicamente eventos `created`. Registra los demás eventos del
-watcher, pero no replica modificaciones, movimientos ni eliminaciones. Si el
-destino está offline cuando se detecta el archivo, el archivo no se encola para
-sincronización futura: puedes enviarlo manualmente cuando vuelva a conectarse.
-La carpeta compartida y la de recibidos deben estar separadas. El registro
-processed_files evita volver a exportar archivos recibidos.
+Una revisión periódica recupera archivos pendientes cuando un equipo vuelve a
+conectarse. El registro de entregas evita duplicar los envíos del observador y
+la interfaz. Los archivos recibidos no se reexportan automáticamente, evitando
+ciclos. Las modificaciones de archivos locales se envían como una nueva copia;
+no se replican eliminaciones ni se sobrescriben archivos del receptor.
 
 ## Compilar el EXE
+
+En **Instaladores y actualizaciones → Actualizar todos los dispositivos**, la PC
+que tiene este proyecto puede compilar y distribuir sus cambios locales por LAN.
+Prepara Android y Windows desde una copia del código, verifica los paquetes y
+envía a cada dispositivo vinculado el formato correspondiente. No requiere
+publicar los cambios en GitHub. La primera preparación necesita las herramientas
+de desarrollo de Windows y Android; puede necesitar Internet para sus dependencias.
+
+Activa **Preparar y enviar automáticamente cuando cambie el código** para revisar
+los cambios cada 30 segundos y compilar cuando se hayan estabilizado. Los equipos
+sin conexión quedan pendientes y se reintenta al reconectar. El panel distingue
+«Recibido · falta instalar» de «Actualizado», que requiere que el equipo confirme
+la revisión ejecutada. En cada destino pulsa **Instalar cambios recibidos de mi
+PC**; Android pide la confirmación del instalador del sistema. En versiones
+antiguas, abre el EXE/APK recibido para instalar por primera vez esta función.
 
 Desde `windows/`, con el entorno instalado, prepara el APK de esta versión y una
 copia portátil de Inno Setup 6.7.3 (consulta `docs/installers.md`):
 
 ```powershell
-python scripts/build_windows.py --apk ../releases/FileFastFlow-0.3.0-debug.apk --inno-dir C:\herramientas\InnoSetup
+python scripts/build_windows.py --apk ../releases/FileFastFlow-0.4.0-debug.apk --inno-dir C:\herramientas\InnoSetup
 ```
 
 Las siguientes compilaciones pueden usar `python scripts/build_windows.py` una
@@ -133,13 +228,13 @@ vez que los recursos estén preparados. Actualiza `--apk` si cambia Android.
 Resultado onedir: `windows/dist/FileFastFlow/FileFastFlow.exe` junto con `_internal/`.
 **Conserva la carpeta completa**; el EXE por sí solo no contiene sus dependencias.
 La entrega portátil comprimida está en `releases/FileFastFlow-Windows-x64.zip`.
-El instalador está en `releases/FileFastFlow-0.3.0-Setup.exe`. No tiene firma de
+El instalador está en `releases/FileFastFlow-0.4.0-Setup.exe`. No tiene firma de
 código comercial. Instala para el usuario actual, ofrece acceso directo en el
 escritorio y permite desinstalar desde Configuración de Windows.
 
 ## Generar instaladores desde la aplicación
 
-En Windows abre **Instaladores** en el menú lateral:
+En Windows abre **Instaladores y actualizaciones** en el menú lateral:
 
 - **Generar instalador EXE para Windows**: elige dónde guardar el EXE. Se crea
   un instalador completo de la aplicación que estás ejecutando, con sus recursos.
@@ -222,7 +317,7 @@ Pendiente de aceptación en hardware: descubrimiento mutuo real por Wi-Fi,
 escaneo con cámara, Share Sheet de otras aplicaciones, notificaciones con
 permisos reales y continuidad del servicio según fabricante/batería.
 Pendiente de futuras versiones: TLS, reanudación, carpetas ZIP, menú contextual,
-sincronización de archivos modificados y recuperación de sync offline.
+sincronización bidireccional de modificaciones y eliminaciones entre plataformas.
 El protocolo admite hasta 16 GiB por archivo; se probaron 100 MiB, no varios GB.
 
 Sin cuentas, nube, acceso remoto, mensajes, VPN, clipboard ni otros extras de V2.

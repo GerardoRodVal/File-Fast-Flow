@@ -79,7 +79,7 @@ class MultipartReceiver:
         if self.name != "file" or self.meta is None or self.file_seen:
             raise TransferError("INVALID_MULTIPART")
         self.file_seen = True
-        folder = Path(self.runtime.db.setting("receive_folder"))
+        folder = self.runtime.receiving_folder(self.meta, self.peer)
         folder.mkdir(parents=True, exist_ok=True)
         temp = folder / f".{self.meta.transfer_id}.devicedrop-part"
         try:
@@ -134,7 +134,11 @@ class MultipartReceiver:
         self.runtime.db.execute("INSERT OR IGNORE INTO processed_files VALUES (?,?,?,?)",
             (str(self.meta.origin_device_id), self.meta.sha256, str(dest), tid))
         self.runtime.db.update_transfer(tid, status="completed", saved_path=str(dest), bytes_done=self.done, completed_at=time.time())
-        self.runtime.bus.emit("transfer_completed", peer=self.peer["device_id"], transfer_id=tid, filename=dest.name, saved_path=str(dest), mime_type=self.meta.mime_type)
+        if self.meta.update_revision and self.meta.filename == f"FileFastFlow-{self.meta.app_version}-Setup.exe":
+            self.runtime.db.set_setting("local_update_pending", {"path": str(dest), "revision": self.meta.update_revision,
+                "version": self.meta.app_version, "size": self.meta.size, "sha256": self.meta.sha256})
+            self.runtime.bus.emit("local_update_received", peer=self.peer["device_id"], version=self.meta.app_version)
+        self.runtime.bus.emit("transfer_completed", peer=self.peer["device_id"], transfer_id=tid, filename=dest.name, saved_path=str(dest), mime_type=self.meta.mime_type, update_revision=self.meta.update_revision)
         return {"status": "completed", "transfer_id": tid, "sha256": self.meta.sha256, "filename": dest.name, "protocol_version": 1}
 
     def cleanup(self):
@@ -150,7 +154,7 @@ class TransferService:
         self.tasks = {}
         self.limit = asyncio.Semaphore(2)
 
-    async def send(self, path: Path, device_id: str, batch_id: str | None = None):
+    async def send(self, path: Path, device_id: str, batch_id: str | None = None, share_scope: str = "device", update_revision=None, app_version=None):
         from ..security.files import sha256_file
         tid = str(uuid4())
         self.tasks[tid] = asyncio.current_task()
@@ -164,9 +168,13 @@ class TransferService:
                 digest = await asyncio.to_thread(sha256_file, path)
                 if (before.st_size, before.st_mtime_ns) != (path.stat().st_size, path.stat().st_mtime_ns):
                     raise TransferError("FILE_CHANGED")
+                mime_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+                if update_revision and path.suffix.lower() == ".apk":
+                    mime_type = "application/vnd.android.package-archive"
                 meta = Metadata(transfer_id=tid, batch_id=batch_id, filename=path.name, size=before.st_size,
-                    sha256=digest, mime_type=mimetypes.guess_type(path.name)[0] or "application/octet-stream",
-                    sender_device_id=self.runtime.device_id, origin_device_id=self.runtime.device_id)
+                    sha256=digest, mime_type=mime_type,
+                    sender_device_id=self.runtime.device_id, origin_device_id=self.runtime.device_id, share_scope=share_scope,
+                    update_revision=update_revision, app_version=app_version)
                 self.runtime.db.transfer(meta.model_dump(mode="json"), "outgoing", device_id, str(path))
                 headers = {"Authorization": f"Bearer {peer['token']}"}
                 host = self.runtime.endpoint(peer)
@@ -188,7 +196,7 @@ class TransferService:
                                 self.check(response); status = response.json()["status"]
                             if status == "completed":
                                 self.runtime.progress(meta, device_id, "completed", meta.size, 0)
-                                return
+                                return True
                             boundary = "DeviceDrop" + uuid4().hex
                             prefix = (f'--{boundary}\r\nContent-Disposition: form-data; name="metadata"\r\n\r\n'
                                 + meta.model_dump_json() + f'\r\n--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="payload"\r\nContent-Type: application/octet-stream\r\n\r\n').encode()
@@ -210,7 +218,7 @@ class TransferService:
                             if response.json().get("sha256") != meta.sha256:
                                 raise TransferError("HASH_MISMATCH")
                             self.runtime.progress(meta, device_id, "completed", meta.size, 0)
-                            return
+                            return True
                         except (httpx.TransportError, TransferError) as error:
                             if isinstance(error, TransferError) and error.status < 500:
                                 raise
@@ -226,6 +234,7 @@ class TransferService:
             self.runtime.bus.emit("transfer_failed", peer=device_id, transfer_id=tid, filename=path.name, error=code)
         finally:
             self.tasks.pop(tid, None)
+        return False
 
     @staticmethod
     def check(response):

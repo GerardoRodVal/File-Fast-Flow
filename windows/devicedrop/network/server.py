@@ -1,11 +1,12 @@
 import asyncio
 import time
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import ValidationError
 
 from ..storage.models import Metadata, PairRequest, PairConfirm
 from .transfer import MultipartReceiver, TransferError
+from ..security.files import validate_filename
 
 
 def create_app(runtime) -> FastAPI:
@@ -56,7 +57,7 @@ def create_app(runtime) -> FastAPI:
         if request.headers.get("x-devicedrop-port"):
             runtime.connections.observe(peer, request.client.host, int(request.headers["x-devicedrop-port"]))
         return {"status": "online", "device_id": runtime.device_id, "protocol_version": 1,
-                "receiving": runtime.db.setting("allow_receive")}
+                "receiving": runtime.db.setting("allow_receive"), "local_revision": runtime.device()["local_revision"]}
 
     @app.post("/api/v1/connection/check")
     async def connection_check(request: Request):
@@ -99,6 +100,28 @@ def create_app(runtime) -> FastAPI:
     async def offer(request: Request):
         meta = Metadata.model_validate(await small_json(request))
         return runtime.offer(meta, request.state.peer)
+
+    @app.get("/api/v1/shared")
+    async def shared(request: Request):
+        entries = []
+        for scope, device_id in [("general", None), ("device", request.state.peer["device_id"])]:
+            for path in runtime.spaces.files(device_id):
+                try:
+                    entries.append({"filename": path.name, "size": path.stat().st_size, "share_scope": scope})
+                except OSError:
+                    continue
+        return {"files": entries, "protocol_version": 1}
+
+    @app.get("/api/v1/shared/{scope}/{filename}")
+    async def shared_file(scope: str, filename: str, request: Request):
+        if scope not in {"general", "device"}:
+            raise TransferError("FILE_NOT_FOUND", 404)
+        validate_filename(filename)
+        folder = runtime.spaces.folder(None if scope == "general" else request.state.peer["device_id"]).resolve()
+        path = folder / filename
+        if filename.startswith(".") or path.is_symlink() or not path.is_file() or path.resolve().parent != folder:
+            raise TransferError("FILE_NOT_FOUND", 404)
+        return FileResponse(path, filename=filename)
 
     @app.get("/api/v1/offers/{tid}")
     async def offer_status(tid: str, request: Request):

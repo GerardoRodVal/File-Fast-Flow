@@ -30,9 +30,31 @@ it does **not** imply authenticated key exchange or encrypted transport in v1.
    Retries reuse transfer_id, allowing an already committed result to be returned.
 
 Metadata = `{transfer_id, batch_id?, filename, size, sha256, mime_type,
-sender_device_id, origin_device_id, protocol_version: 1}`. IDs are UUIDs;
+sender_device_id, origin_device_id, share_scope?, protocol_version: 1}`. IDs are UUIDs;
 SHA-256 is 64 lowercase hex characters; size is 0–16 GiB. Reject path separators,
 control characters and Windows reserved names. Each file has its own transfer_id.
+
+Local application updates optionally include `update_revision` (64 lowercase
+SHA-256 hex characters) and `app_version` (numeric three-part version). Both must
+be present together, with device scope. They use the same authenticated offer,
+approval and hash-verified upload flow as other files. Recipients stage the
+verified installer and offer installation locally; they do not execute it on
+receipt. Older clients can ignore these optional fields and receive the file.
+The authenticated connection response may include `local_revision` and Android
+`version_code`. A distributor reports installation only after the recipient
+advertises the expected revision; transfer completion alone is delivery.
+
+Windows supports optional `share_scope: "general" | "device"`. Omission defaults
+to `device` for legacy senders. General files are stored at the reception root;
+individual files are stored in the authenticated sender's named subfolder. The
+sender cannot supply a destination path or select another device's folder.
+
+Windows provides authenticated `GET /api/v1/shared` returning
+`{files: [{filename, size, share_scope}], protocol_version: 1}` and
+`GET /api/v1/shared/{scope}/{filename}` for downloading one file. These expose
+only flat root files and the caller's individual files. Device directories,
+partial files, symbolic links and files belonging to other peers are excluded.
+Legacy clients can continue using the offer/upload flow without these routes.
 
 `GET /api/v1/devices`, `GET /api/v1/transfers`, `GET /api/v1/files/{transfer_id}`
 return metadata, scoped to the authenticated relationship; never arbitrary paths.

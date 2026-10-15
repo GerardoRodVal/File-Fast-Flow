@@ -1,22 +1,22 @@
 {
   "releases/FileFastFlow-Windows-x64.zip": {
-    "bytes": 121096757,
-    "sha256": "f3fb893784adb7870b671fcb0ca3b67404c0cf93febb8b3af5c90f7339580cf3"
+    "bytes": 121457832,
+    "sha256": "e90d4e6a06f598595a3d79a99b788d5b36091673c23b6228b1f5e2e96cd08a11"
   },
   "releases/FileFastFlow-source.zip": {
-    "bytes": 3003383,
-    "sha256": "3cd791ce4c3411424c56723c1f403a5a6a5a461558f4285a0267cbd095d2f235"
+    "bytes": 3083674,
+    "sha256": "ad1eaedcf413365d9f198f36531a8461408142f7eb478c9f82d8e58abfb2999d"
   },
-  "releases/FileFastFlow-0.3.0-debug.apk": {
-    "bytes": 21155750,
-    "sha256": "0f7b1ad1bc3f004af4228e0c9bbf0b0981ccc99115d2b5c8a3b1f73fa1fcfa67"
+  "releases/FileFastFlow-0.4.0-debug.apk": {
+    "bytes": 21538481,
+    "sha256": "b034ab50c82a19ba04d83dbbc9266c613ff0ffd5e2b3bf38b6d9e055d1e924ec"
   },
-  "releases/FileFastFlow-0.3.0-Setup.exe": {
-    "bytes": 112031758,
-    "sha256": "4019845af7d11d8db0a26af4091da61c8b4f27c0b26cac726df117cb6a8904d2"
+  "releases/FileFastFlow-0.4.0-Setup.exe": {
+    "bytes": 112392354,
+    "sha256": "45a32905e4b36f49a674f1bb5e1b97466555bcde20e269447deb6e8e72b7f9f7"
   },
-  "windows/dist/FileFastFlow/FileFastFlow.exe": {
-    "bytes": 9926283,
-    "sha256": "a961cff5717afa5fbf0aa18438d3e502694ab2c1970a7f34e0cb63c184e8b46f"
+  "windows/dist/updates-0.4.0/FileFastFlow/FileFastFlow.exe": {
+    "bytes": 9950533,
+    "sha256": "3af7532f00d915204c866de13510e165e87860a2725ee60c743f8a745b498033"
   }
 }

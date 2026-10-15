@@ -60,7 +60,7 @@ def test_pairing_expiry_and_rate_limit(runtime):
 def test_metadata_validation():
     base = dict(transfer_id=str(uuid4()), filename="a.txt", size=10, sha256="a" * 64, sender_device_id=str(uuid4()), origin_device_id=str(uuid4()))
     assert Metadata(**base).protocol_version == 1
-    for changes in [{"size": -1}, {"sha256": "nope"}, {"filename": "../../a"}, {"protocol_version": 2}, {"size": 17 * 1024**3}]:
+    for changes in [{"size": -1}, {"sha256": "nope"}, {"filename": "../../a"}, {"protocol_version": 2}, {"size": 17 * 1024**3}, {"share_scope": "other-device"}]:
         with pytest.raises(ValidationError): Metadata(**(base | changes))
 
 def test_stability_and_stop(tmp_path):

@@ -15,7 +15,10 @@ def stamp(root, run_number):
     project.write_text(re.sub(r'^version = "[^"]+"', f'version = "{version}"', project.read_text(encoding="utf-8"), flags=re.M), encoding="utf-8")
     (root / "windows" / "devicedrop" / "__init__.py").write_text(f'__version__ = "{version}"\n', encoding="utf-8")
     gradle = root / "android" / "app" / "build.gradle.kts"
-    text = re.sub(r'versionCode = \d+', f'versionCode = {100000 + run_number}', gradle.read_text(encoding="utf-8"))
+    source = gradle.read_text(encoding="utf-8")
+    base_code = int(re.search(r'versionCode = (\d+)', source).group(1))
+    # Preserve upgrades from published 0.3.x APKs and from locally built APKs.
+    text = re.sub(r'versionCode = \d+', f'versionCode = {max(100000, base_code) + run_number}', source)
     text = re.sub(r'versionName = "[^"]+"', f'versionName = "{version}"', text)
     gradle.write_text(text, encoding="utf-8")
     return version

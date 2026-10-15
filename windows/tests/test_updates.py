@@ -116,7 +116,7 @@ def test_upgrade_reuses_legacy_identity_history_and_folders(tmp_path, monkeypatc
     runtime = Runtime()
     try:
         assert runtime.root == legacy and runtime.device_id == identity
-        assert runtime.db.setting("receive_folder") == str(tmp_path / "existing-received")
+        assert runtime.db.setting("receive_folder") == str(tmp_path / "existing-shared")
         assert runtime.db.setting("sync_folder") == str(tmp_path / "existing-shared")
         assert runtime.db.setting("onboarded") and runtime.db.setting("auto_updates")
         assert not (tmp_path / "FileFastFlow" / "devicedrop.db").exists()
@@ -133,7 +133,7 @@ def test_update_ui_notifies_once_and_can_disable(runtime, monkeypatch):
     release = parse_release(metadata(), "0.3.0")
     try:
         assert window.windowTitle() == "FileFastFlow"
-        assert window.nav.item(6).text() == "Actualizaciones"
+        assert window.nav.item(window.SOFTWARE_PAGE).text().replace("\n", " ") == "Instaladores y actualizaciones"
         window.update_checked(release); window.update_checked(release)
         assert len(notifications) == 1
         assert runtime.db.setting("last_update_notified") == release.version

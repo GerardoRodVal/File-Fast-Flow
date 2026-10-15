@@ -305,6 +305,9 @@ class DropRepository(val context: Context, val port: Int = 45832) {
         dao.transfer(meta.transferId)?.let { dao.save(it.copy(status = "completed", savedPath = dest.absolutePath, bytesDone = meta.size, completedAt = System.currentTimeMillis())) }
         dao.processed(ProcessedFile(meta.origin, meta.sha256, dest.absolutePath, meta.transferId))
         offers.remove(meta.transferId)
+        if (meta.updateRevision.isNotEmpty() && meta.filename == "FileFastFlow-${meta.appVersion}-debug.apk") {
+            (context.applicationContext as? DeviceDropApp)?.updates?.acceptLocal(dest, meta)
+        }
         events.emit(DropEvent("transfer_completed", peer.deviceId, meta.json().put("saved_path", dest.absolutePath).put("sender_name", peer.name)))
     }
 

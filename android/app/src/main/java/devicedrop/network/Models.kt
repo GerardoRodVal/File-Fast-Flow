@@ -23,10 +23,14 @@ data class Device(val deviceId: String, val name: String, val platform: String, 
 }
 
 data class Metadata(val transferId: String, val filename: String, val size: Long, val sha256: String,
-    val mimeType: String, val sender: String, val origin: String, val batch: String = "") {
+    val mimeType: String, val sender: String, val origin: String, val batch: String = "",
+    val updateRevision: String = "", val appVersion: String = "") {
     fun json() = JSONObject().put("transfer_id", transferId).put("filename", filename).put("size", size)
         .put("sha256", sha256).put("mime_type", mimeType).put("sender_device_id", sender).put("origin_device_id", origin)
-        .put("protocol_version", 1).apply { if (batch.isNotEmpty()) put("batch_id", batch) }
+        .put("protocol_version", 1).apply {
+            if (batch.isNotEmpty()) put("batch_id", batch)
+            if (updateRevision.isNotEmpty()) { put("update_revision", updateRevision); put("app_version", appVersion) }
+        }
     companion object {
         fun parse(j: JSONObject): Metadata {
             require(j.getInt("protocol_version") == 1)
@@ -36,8 +40,11 @@ data class Metadata(val transferId: String, val filename: String, val size: Long
             require(j.getLong("size") in 0..16L * 1024 * 1024 * 1024) { "INVALID_SIZE" }
             require(j.getString("sha256").matches(Regex("[a-f0-9]{64}"))) { "INVALID_HASH" }
             require(j.getString("mime_type").length <= 120)
+            val revision = if (j.isNull("update_revision")) "" else j.optString("update_revision")
+            val version = if (j.isNull("app_version")) "" else j.optString("app_version")
+            require((revision.isEmpty() && version.isEmpty()) || (revision.matches(Regex("[a-f0-9]{64}")) && version.matches(Regex("\\d+\\.\\d+\\.\\d+"))))
             return Metadata(j.getString("transfer_id"), j.getString("filename"), j.getLong("size"), j.getString("sha256"),
-                j.getString("mime_type"), j.getString("sender_device_id"), j.getString("origin_device_id"), j.optString("batch_id").takeUnless { it == "null" } ?: "")
+                j.getString("mime_type"), j.getString("sender_device_id"), j.getString("origin_device_id"), j.optString("batch_id").takeUnless { it == "null" } ?: "", revision, version)
         }
     }
 }

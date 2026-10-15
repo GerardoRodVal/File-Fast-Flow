@@ -3,6 +3,8 @@ name: Build and publish FileFastFlow
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -64,7 +66,12 @@ jobs:
           name: android-apk
           path: work/apk
       - name: Install Python dependencies
-        run: python -m pip install -r windows/requirements.lock.txt
+        shell: pwsh
+        run: |
+          python -m venv windows/.venv
+          & windows/.venv/Scripts/python.exe -m pip install -r windows/requirements.lock.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Join-Path $PWD 'windows/.venv/Scripts' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Test Windows
         working-directory: windows
         env:
@@ -116,12 +123,14 @@ jobs:
           if-no-files-found: error
 
   publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: [android, windows]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v4
         with:
           name: release-packages
@@ -134,9 +143,10 @@ jobs:
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
           tag="v$RELEASE_VERSION"
-          printf 'Actualización de FileFastFlow desde main.\n\nCommit: %s\n\nDescarga el instalador Setup.exe para Windows. El APK Android es una compilación de desarrollo.\n' "$RELEASE_COMMIT" > notes.md
+          printf 'Actualización de FileFastFlow para Windows y Android.\n\nCommit: %s\n\nDescarga Setup.exe para Windows o el APK para Android. Las aplicaciones con búsqueda automática activada avisan cuando esta versión esté publicada. El APK conserva la firma de desarrollo del proyecto.\n\n' "$RELEASE_COMMIT" > notes.md
+          cat CHANGELOG.md >> notes.md
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --draft --target "$RELEASE_COMMIT" --title "FileFastFlow $RELEASE_VERSION" --notes-file notes.md
           fi
           gh release upload "$tag" releases/* --clobber
-          gh release edit "$tag" --draft=false --latest
+          gh release edit "$tag" --notes-file notes.md --draft=false --latest

@@ -20,7 +20,12 @@ def assets_dir():
 def windows_bundle():
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parents[1] / "dist" / "FileFastFlow"
+    dist = Path(__file__).resolve().parents[1] / "dist"
+    # Allow refreshing installers without overwriting a user's running bundle.
+    versioned = dist / f"updates-{VERSION}" / "FileFastFlow"
+    if (versioned / "FileFastFlow.exe").is_file() and (versioned / "_internal").is_dir():
+        return versioned
+    return dist / "FileFastFlow"
 
 
 def default_filename(kind):

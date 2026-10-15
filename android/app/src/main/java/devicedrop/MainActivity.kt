@@ -44,10 +44,12 @@ import java.io.File
 
 class MainActivity: ComponentActivity() {
     private val shared = MutableStateFlow<List<Uri>>(emptyList())
+    private val openUpdates = MutableStateFlow(false)
     private val repo get() = (application as DeviceDropApp).repository
+    private val updates get() = (application as DeviceDropApp).updates
     override fun onCreate(state: Bundle?) {
         super.onCreate(state); readShare(intent)
-        val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+        val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { updates.schedule() }
         if (Build.VERSION.SDK_INT >= 33) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF087F69), background = Color(0xFFF5F8F7), surface = Color.White)) {
@@ -56,8 +58,10 @@ class MainActivity: ComponentActivity() {
         }
     }
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); readShare(intent) }
+    override fun onResume() { super.onResume(); updates.schedule() }
     @Suppress("DEPRECATION")
     private fun readShare(intent: Intent?) {
+        openUpdates.value = intent?.action == devicedrop.updates.OPEN_UPDATES
         shared.value = when (intent?.action) {
             Intent.ACTION_SEND -> listOfNotNull(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
             Intent.ACTION_SEND_MULTIPLE -> intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.toList() ?: emptyList()
@@ -85,6 +89,8 @@ class MainActivity: ComponentActivity() {
         var connectionIp by remember { mutableStateOf("") }; var connectionPort by remember { mutableStateOf("45832") }
         var validationReport by remember { mutableStateOf<ConnectionReport?>(null) }
         val snackbar = remember { SnackbarHostState() }
+        val requestedUpdates by openUpdates.collectAsState()
+        LaunchedEffect(requestedUpdates) { if (requestedUpdates) { tab = 3; openUpdates.value = false } }
         fun work(action: suspend () -> Unit) { scope.launch { try { action() } catch (e: CancellationException) { throw e } catch (e: Exception) { repo.error.value = (e as? ProtocolError)?.code ?: "NETWORK_ERROR" } } }
         fun connectionLabel(id: String): String = when {
             id in checkingConnections -> "Validando conexión…"
@@ -170,6 +176,7 @@ class MainActivity: ComponentActivity() {
                         }
                     }
                     3 -> {
+                        item { devicedrop.updates.UpdatesScreen(this@MainActivity, updates) }
                         item { Text("Este dispositivo", style = MaterialTheme.typography.headlineMedium) }
                         item { ListItem(headlineContent = { Text(name) }, supportingContent = { Text("Nombre del dispositivo") }, modifier = Modifier.clickable { editedName = name; rename = true }) }
                         item { Row(verticalAlignment = Alignment.CenterVertically) { Text("Permitir recepción", Modifier.weight(1f)); Switch(receiving, { value -> work {

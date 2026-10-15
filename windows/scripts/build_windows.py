@@ -15,5 +15,6 @@ subprocess.run([sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "
     "--name", "FileFastFlow", "--paths", str(root), "--collect-submodules", "uvicorn",
     "--icon", str(root.parent / "assets" / "FileFastFlow.ico"),
     "--collect-submodules", "zeroconf", "--hidden-import", "PIL.Image",
+    "--collect-submodules", "winrt", "--collect-submodules", "windows_toasts",
     "--add-data", f"{root / 'devicedrop' / 'assets'}:devicedrop/assets",
     "--distpath", str(args.dist_dir.resolve()), "--workpath", str(root / "build"), str(root / "devicedrop" / "main.py")], cwd=root, check=True)

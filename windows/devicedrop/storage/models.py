@@ -1,6 +1,6 @@
 from typing import Literal
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class Device(BaseModel):
@@ -23,7 +23,16 @@ class Metadata(BaseModel):
     mime_type: str = Field(default="application/octet-stream", max_length=120)
     sender_device_id: UUID
     origin_device_id: UUID
+    share_scope: Literal["general", "device"] = "device"
+    update_revision: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    app_version: str | None = Field(default=None, pattern=r"^\d+\.\d+\.\d+$")
     protocol_version: Literal[1] = 1
+
+    @model_validator(mode="after")
+    def update_metadata(self):
+        if bool(self.update_revision) != bool(self.app_version) or (self.update_revision and self.share_scope != "device"):
+            raise ValueError("INVALID_UPDATE_METADATA")
+        return self
 
     @field_validator("filename")
     @classmethod

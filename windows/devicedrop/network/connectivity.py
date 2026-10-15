@@ -75,7 +75,7 @@ class ConnectionService:
                 raise ValueError("INVALID_RESPONSE")
             if data.get("protocol_version") != 1 or (not legacy and data.get("device_id") != peer["device_id"]):
                 raise TransferError("INVALID_RESPONSE")
-            return {"legacy": legacy, "receiving": data.get("receiving")}
+            return {"legacy": legacy, "receiving": data.get("receiving"), "revision": data.get("local_revision", ""), "version_code": data.get("version_code", 0)}
 
     def observe(self, peer, ip, port):
         # Address changes are accepted only on an authenticated request.
@@ -154,4 +154,4 @@ class ConnectionService:
                 reverse = previous.get("reverse_online")
                 if reverse is False and not code:
                     code = previous.get("code", "")
-            return self.store(peer, True, reverse, code, remote_receiving=data.get("receiving"))
+            return self.store(peer, True, reverse, code, remote_receiving=data.get("receiving"), remote_revision=data.get("revision", ""), remote_version_code=data.get("version_code", 0))
